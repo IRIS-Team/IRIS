@@ -5,14 +5,17 @@ import bs4
 from iris.module import Module
 from iris.util import PrintUtil, HTMLUtil
 from iris.logger import Logger
-
+from urllib3.exceptions import InsecureRequestWarning
 
 class IRISModule(Module):
+
     description = 'Lookup Canadian citizens\' personal information by name/address/phone number'
     author = 'cs'
     date = '28-07-2021'
 
     def execute(self, name__address__phone_number: str):
+        requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+
         people = [x for x in self.__411_lookup(name__address__phone_number) if not all(list(map((lambda x : x is None), x)))]
 
         if len(people) == 0:
@@ -52,12 +55,13 @@ class IRISModule(Module):
         is_address = __is_address(keywords)
 
         res = requests.get(
-            'https://www.canada411.ca/search/',
+            url='https://www.canada411.ca/search/',
             params={
                 'stype': 'si',
                 'what': keywords if is_address is False else None,
                 'where': keywords if is_address is True else None
-            }
+            },
+            verify=False
         )
 
         soup = bs4.BeautifulSoup(res.text, 'html.parser')
